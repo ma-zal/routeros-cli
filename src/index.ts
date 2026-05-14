@@ -19,6 +19,7 @@
 import { config } from 'dotenv';
 import { TelnetConn } from './lib/telnet';
 import { login, readUntilPrompt, cleanOutput, Credentials } from './lib/routeros';
+import { nonEmptyEnv } from './lib/env';
 
 // Load .env automatically so callers don't have to.
 config();
@@ -30,22 +31,41 @@ export interface RouterOSOptions {
   password?: string;
   /** TCP connect timeout in seconds. Default: 15. */
   connectTimeout?: number;
-  /** Time to wait for a RouterOS command response in ms. Default: 10 000. */
+  /** Time to wait for a RouterOS command response in seconds. Default: 10. */
   commandTimeout?: number;
 }
 
 /**
  * Resolve options using a three-tier priority:
  *   explicit option > environment variable > built-in default
+ *
+ * host has no built-in default — it must be supplied explicitly or via MIKROTIK_HOST.
  */
 function resolveOptions(opts: RouterOSOptions = {}): Required<RouterOSOptions> {
+  const host = opts.host ?? nonEmptyEnv('MIKROTIK_HOST');
+  if (!host) {
+    throw new Error('host is required — pass it via RouterOSOptions or set MIKROTIK_HOST');
+  }
+
+  const portStr = nonEmptyEnv('MIKROTIK_PORT');
+  const port = opts.port ?? (portStr !== undefined ? parseInt(portStr, 10) : 23);
+  if (isNaN(port) || port < 1 || port > 65535) {
+    throw new Error(`Invalid port value: ${opts.port ?? portStr} — must be 1–65535`);
+  }
+
+  const timeoutStr = nonEmptyEnv('MIKROTIK_TIMEOUT');
+  const commandTimeout = opts.commandTimeout ?? (timeoutStr !== undefined ? parseFloat(timeoutStr) : 10);
+
+  const connectTimeoutStr = nonEmptyEnv('MIKROTIK_CONNECT_TIMEOUT');
+  const connectTimeout = opts.connectTimeout ?? (connectTimeoutStr !== undefined ? parseFloat(connectTimeoutStr) : 15);
+
   return {
-    host: opts.host ?? process.env['MIKROTIK_HOST'] ?? '192.168.4.1',
-    port: opts.port ?? parseInt(process.env['MIKROTIK_PORT'] ?? '23', 10),
-    login: opts.login ?? process.env['MIKROTIK_LOGIN'] ?? 'admin',
-    password: opts.password ?? process.env['MIKROTIK_PASSWORD'] ?? '',
-    connectTimeout: opts.connectTimeout ?? 15,
-    commandTimeout: opts.commandTimeout ?? 10_000,
+    host,
+    port,
+    login: opts.login ?? nonEmptyEnv('MIKROTIK_LOGIN') ?? 'admin',
+    password: opts.password ?? nonEmptyEnv('MIKROTIK_PASSWORD') ?? '',
+    connectTimeout,
+    commandTimeout,
   };
 }
 
@@ -87,18 +107,18 @@ export class RouterOSSession {
     this.conn = conn;
   }
 
-  async execute(command: string, timeoutMs?: number): Promise<string> {
+  async execute(command: string, timeoutSec?: number): Promise<string> {
     if (!this.conn) throw new Error('Not connected — call connect() first');
     this.conn.sendline(command);
-    const raw = await readUntilPrompt(this.conn, this.creds.password, timeoutMs ?? this.opts.commandTimeout);
+    const raw = await readUntilPrompt(this.conn, this.creds.password, (timeoutSec ?? this.opts.commandTimeout) * 1000);
     return cleanOutput(raw, command);
   }
 
   /** Run multiple commands over the same connection and return a result map keyed by command. */
-  async executeBatch(commands: string[], timeoutMs?: number): Promise<Record<string, string>> {
+  async executeBatch(commands: string[], timeoutSec?: number): Promise<Record<string, string>> {
     const results: Record<string, string> = {};
     for (const cmd of commands) {
-      results[cmd] = await this.execute(cmd, timeoutMs);
+      results[cmd] = await this.execute(cmd, timeoutSec);
     }
     return results;
   }
@@ -127,7 +147,7 @@ export async function executeCommand(command: string, options?: RouterOSOptions)
     await conn.connect();
     await login(conn, creds);
     conn.sendline(command);
-    const raw = await readUntilPrompt(conn, creds.password, opts.commandTimeout);
+    const raw = await readUntilPrompt(conn, creds.password, opts.commandTimeout * 1000);
     return cleanOutput(raw, command);
   } finally {
     conn.close();

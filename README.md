@@ -39,11 +39,13 @@ npm install routeros-cli
 Connection defaults are read from environment variables. Create a `.env` file in your working directory:
 
 ```env
-MIKROTIK_HOST=192.168.88.1   # direct Telnet (MikroTik default IP)
-# MIKROTIK_HOST=192.168.4.1  # Woobm USB serial console
+MIKROTIK_HOST=192.168.88.1     # required — direct Telnet (MikroTik default IP)
+# MIKROTIK_HOST=192.168.4.1   # Woobm USB serial console
 MIKROTIK_PORT=23
 MIKROTIK_LOGIN=admin
 MIKROTIK_PASSWORD=yourpassword
+MIKROTIK_TIMEOUT=10            # command response timeout in seconds
+MIKROTIK_CONNECT_TIMEOUT=15    # TCP connect timeout in seconds
 ```
 
 Any option can also be passed directly on the command line and overrides the environment.
@@ -94,14 +96,14 @@ Type `quit` or press `Ctrl+C` to exit.
 
 ### Global options
 
-| Option              | Default                        | Description                          |
-| ------------------- | ------------------------------ | ------------------------------------ |
-| `--host <ip>`       | `MIKROTIK_HOST` env / `192.168.88.1` | Device IP (direct Telnet) or `192.168.4.1` (Woobm USB) |
-| `--port <port>`     | `MIKROTIK_PORT` env / `23`     | Telnet port                          |
-| `--login <user>`    | `MIKROTIK_LOGIN` env / `admin` | Username                             |
-| `--password <pass>` | `MIKROTIK_PASSWORD` env        | Password                             |
-| `--timeout <sec>`   | `10`                           | Command response timeout in seconds  |
-| `--json`            | —                              | Output as JSON (`{"output": "..."}`) |
+| Option              | Default                              | Description                          |
+| ------------------- | ------------------------------------ | ------------------------------------ |
+| `--host <ip>`       | `MIKROTIK_HOST` env (**required**)   | Device IP or hostname                |
+| `--port <port>`     | `MIKROTIK_PORT` env / `23`           | Telnet port                          |
+| `--login <user>`    | `MIKROTIK_LOGIN` env / `admin`       | Username                             |
+| `--password <pass>` | `MIKROTIK_PASSWORD` env / `""`       | Password                             |
+| `--timeout <sec>`   | `MIKROTIK_TIMEOUT` env / `10`        | Command response timeout in seconds  |
+| `--json`            | —                                    | Output as JSON (`{"output": "..."}`) |
 
 ### Exit codes
 
@@ -150,7 +152,7 @@ import { RouterOSSession } from 'routeros-cli';
 
 const session = new RouterOSSession({
   host: '192.168.88.1', // or 192.168.4.1 for Woobm USB
-  commandTimeout: 15_000, // ms
+  commandTimeout: 15, // seconds
 });
 
 await session.connect();
@@ -168,12 +170,12 @@ await session.close();
 
 ```typescript
 interface RouterOSOptions {
-  host?: string; // default: MIKROTIK_HOST env | 192.168.88.1 (direct) or 192.168.4.1 (Woobm USB)
+  host?: string; // required — MIKROTIK_HOST env or explicit value
   port?: number; // default: MIKROTIK_PORT env | 23
-  login?: string; // default: MIKROTIK_LOGIN env | admin
-  password?: string; // default: MIKROTIK_PASSWORD env
-  connectTimeout?: number; // TCP connect timeout in seconds (default: 15)
-  commandTimeout?: number; // Command response timeout in ms (default: 10 000)
+  login?: string; // default: MIKROTIK_LOGIN env | 'admin'
+  password?: string; // default: MIKROTIK_PASSWORD env | ''
+  connectTimeout?: number; // TCP connect timeout in seconds — MIKROTIK_CONNECT_TIMEOUT env | 15
+  commandTimeout?: number; // command response timeout in seconds — MIKROTIK_TIMEOUT env | 10
 }
 ```
 

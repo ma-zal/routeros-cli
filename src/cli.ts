@@ -18,30 +18,50 @@ import { config } from 'dotenv';
 import { TelnetConn } from './lib/telnet';
 import { login, readUntilPrompt, cleanOutput, Credentials } from './lib/routeros';
 import { printOutput, printError } from './lib/output';
+import { nonEmptyEnv } from './lib/env';
 
 config();
 
-const DEFAULT_HOST = process.env['MIKROTIK_HOST'] ?? '192.168.4.1';
-const DEFAULT_PORT = process.env['MIKROTIK_PORT'] ?? '23';
-const DEFAULT_LOGIN = process.env['MIKROTIK_LOGIN'] ?? 'admin';
-const DEFAULT_PASSWORD = process.env['MIKROTIK_PASSWORD'] ?? '';
+const DEFAULT_HOST = nonEmptyEnv('MIKROTIK_HOST'); // undefined = required
+const DEFAULT_PORT = nonEmptyEnv('MIKROTIK_PORT') ?? '23';
+const DEFAULT_LOGIN = nonEmptyEnv('MIKROTIK_LOGIN') ?? 'admin';
+const DEFAULT_PASSWORD = nonEmptyEnv('MIKROTIK_PASSWORD') ?? '';
+const DEFAULT_TIMEOUT = nonEmptyEnv('MIKROTIK_TIMEOUT') ?? '10';
+const DEFAULT_CONNECT_TIMEOUT_SEC = parseFloat(nonEmptyEnv('MIKROTIK_CONNECT_TIMEOUT') ?? '15');
 
 // ---------------------------------------------------------------------------
 // Connection factory
 // ---------------------------------------------------------------------------
 
 /** Build a TelnetConn + Credentials pair from the parsed CLI options. */
-function buildConn(opts: OptionValues): { conn: TelnetConn; creds: Credentials } {
-  const conn = new TelnetConn({
-    host: opts['host'] as string,
-    port: parseInt(opts['port'] as string, 10),
-    connectTimeout: 15,
-  });
+function buildConn(opts: OptionValues): { conn: TelnetConn; creds: Credentials; timeoutMs: number } {
+  const json = opts['json'] as boolean;
+
+  const host = opts['host'] as string | undefined;
+  if (!host) {
+    printError('--host is required (or set env MIKROTIK_HOST)', json);
+    process.exit(1);
+  }
+
+  const portStr = opts['port'] as string;
+  const port = parseInt(portStr, 10);
+  if (isNaN(port) || port < 1 || port > 65535) {
+    printError(`Invalid port: "${portStr}" — must be 1–65535`, json);
+    process.exit(1);
+  }
+
+  const timeoutSec = parseFloat(opts['timeout'] as string);
+  if (isNaN(timeoutSec) || timeoutSec <= 0) {
+    printError(`Invalid timeout: "${opts['timeout']}" — must be a positive number`, json);
+    process.exit(1);
+  }
+
+  const conn = new TelnetConn({ host, port, connectTimeout: DEFAULT_CONNECT_TIMEOUT_SEC });
   const creds: Credentials = {
     login: opts['login'] as string,
     password: opts['password'] as string,
   };
-  return { conn, creds };
+  return { conn, creds, timeoutMs: timeoutSec * 1000 };
 }
 
 // ---------------------------------------------------------------------------
@@ -58,9 +78,8 @@ function buildConn(opts: OptionValues): { conn: TelnetConn; creds: Credentials }
  *     login overhead is paid only once.
  */
 async function cmdExec(command: string | undefined, opts: OptionValues): Promise<void> {
-  const timeoutMs = parseFloat(opts['timeout'] as string) * 1000;
   const json = opts['json'] as boolean;
-  const { conn, creds } = buildConn(opts);
+  const { conn, creds, timeoutMs } = buildConn(opts);
 
   let stdinData = '';
   if (!command) {
@@ -109,7 +128,6 @@ async function cmdExec(command: string | undefined, opts: OptionValues): Promise
  * stripped automatically.
  */
 async function cmdBatch(filePath: string, opts: OptionValues): Promise<void> {
-  const timeoutMs = parseFloat(opts['timeout'] as string) * 1000;
   const json = opts['json'] as boolean;
 
   let content: string;
@@ -126,7 +144,7 @@ async function cmdBatch(filePath: string, opts: OptionValues): Promise<void> {
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'));
 
-  const { conn, creds } = buildConn(opts);
+  const { conn, creds, timeoutMs } = buildConn(opts);
 
   try {
     await conn.connect();
@@ -154,9 +172,8 @@ async function cmdBatch(filePath: string, opts: OptionValues): Promise<void> {
  * character handling.
  */
 async function cmdConsole(opts: OptionValues): Promise<void> {
-  const timeoutMs = parseFloat(opts['timeout'] as string) * 1000;
   const json = opts['json'] as boolean;
-  const { conn, creds } = buildConn(opts);
+  const { conn, creds, timeoutMs } = buildConn(opts);
 
   try {
     await conn.connect();
@@ -221,7 +238,7 @@ program
   .option('--port <port>', 'Telnet port', DEFAULT_PORT)
   .option('--login <user>', 'Username', DEFAULT_LOGIN)
   .option('--password <pass>', 'Password', DEFAULT_PASSWORD)
-  .option('--timeout <sec>', 'Command timeout (s)', '10')
+  .option('--timeout <sec>', 'Command timeout (s)', DEFAULT_TIMEOUT)
   .option('--json', 'Output as JSON');
 
 program

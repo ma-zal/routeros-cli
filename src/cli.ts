@@ -17,6 +17,7 @@ import { Command, OptionValues } from 'commander';
 import { config } from 'dotenv';
 import { TelnetConn } from './lib/telnet';
 import { login, readUntilPrompt, cleanOutput, Credentials } from './lib/routeros';
+import { printOutput, printError } from './lib/output';
 
 config();
 
@@ -24,36 +25,6 @@ const DEFAULT_HOST = process.env['MIKROTIK_HOST'] ?? '192.168.4.1';
 const DEFAULT_PORT = process.env['MIKROTIK_PORT'] ?? '23';
 const DEFAULT_LOGIN = process.env['MIKROTIK_LOGIN'] ?? 'admin';
 const DEFAULT_PASSWORD = process.env['MIKROTIK_PASSWORD'] ?? '';
-
-// ---------------------------------------------------------------------------
-// Output helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Write command output to stdout.
- * In JSON mode the result is wrapped as {"output":"..."} so callers
- * (scripts, AI agents) can parse it reliably regardless of content.
- */
-function printOutput(text: string, json: boolean): void {
-  if (json) {
-    process.stdout.write(JSON.stringify({ output: text }) + '\n');
-  } else {
-    if (text) process.stdout.write(text + '\n');
-  }
-}
-
-/**
- * Write an error message to stderr.
- * Mirrors printOutput's JSON mode so a caller using --json always gets
- * structured output on both stdout and stderr.
- */
-function printError(message: string, json: boolean): void {
-  if (json) {
-    process.stderr.write(JSON.stringify({ error: message }) + '\n');
-  } else {
-    process.stderr.write(`ERROR: ${message}\n`);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Connection factory

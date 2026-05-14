@@ -208,7 +208,9 @@ export function cleanOutput(raw: string, cmd: string): string {
   const lines = clean.split('\n').map(simulateLine);
 
   // RouterOS echoes the command back on the first line of the response.
-  const start = lines.length > 0 && lines[0].includes(cmd.trim()) ? 1 : 0;
+  // Guard against empty cmd: every string includes '', which would always drop line 0.
+  const trimmedCmd = cmd.trim();
+  const start = trimmedCmd !== '' && lines.length > 0 && lines[0].includes(trimmedCmd) ? 1 : 0;
   const filtered = lines.slice(start);
 
   // Strip the trailing prompt (e.g. "[admin@MikroTik] > ") from the output.

@@ -1,5 +1,5 @@
 {
-  "name": "roscli",
+  "name": "routeros-cli",
   "version": "0.1.0",
   "description": "MikroTik RouterOS CLI and Node.js library via Telnet",
   "main": "./dist/index.js",
@@ -14,7 +14,7 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "dev": "ts-node src/cli.ts",
     "start": "node dist/cli.js",
     "prepublishOnly": "npm run build",
@@ -31,6 +31,18 @@
     "network",
     "automation"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ma-zal/routeros-cli.git"
+  },
+  "homepage": "https://github.com/ma-zal/routeros-cli",
+  "bugs": {
+    "url": "https://github.com/ma-zal/routeros-cli/issues"
+  },
+  "author": {
+    "name": "Martin Zaloudek",
+    "url": "https://github.com/ma-zal"
+  },
   "license": "MIT",
   "dependencies": {
     "commander": "12.1.0",

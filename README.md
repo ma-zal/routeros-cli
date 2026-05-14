@@ -16,11 +16,6 @@ Works with both connection methods:
 
 ## Installation
 
-> **Note:** The package is not yet published to NPM. The commands below reflect
-> the intended state once it is. For now, clone the repository and run
-> `npm install && npm run build` to build locally, then use `node dist/cli.js`
-> in place of `routeros-cli`.
-
 **Global CLI (recommended for terminal use):**
 
 ```bash

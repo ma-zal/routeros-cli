@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { printOutput, printError } from '../lib/output';
+import { printOutput, printError } from './output';
 
 describe('printOutput', () => {
   let stdoutSpy: ReturnType<typeof vi.spyOn>;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanOutput, login, readUntilPrompt } from '../lib/routeros';
-import type { TelnetConn } from '../lib/telnet';
+import { cleanOutput, login, readUntilPrompt } from './routeros';
+import type { TelnetConn } from './telnet';
 
 // ---------------------------------------------------------------------------
 // cleanOutput — pure function, no mocks needed

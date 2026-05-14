@@ -16,13 +16,9 @@
  *
  * Errors are thrown as plain Error instances with a descriptive message.
  */
-import { config } from 'dotenv';
 import { TelnetConn } from './lib/telnet';
 import { login, readUntilPrompt, cleanOutput, Credentials } from './lib/routeros';
 import { nonEmptyEnv } from './lib/env';
-
-// Load .env automatically so callers don't have to.
-config();
 
 export interface RouterOSOptions {
   host?: string;

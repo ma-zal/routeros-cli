@@ -3,6 +3,8 @@
 Install the package and import it directly into your TypeScript or JavaScript project.
 No native dependencies — works on Windows, macOS, and Linux.
 
+> **Note:** The library does not load `.env` files automatically. Pass connection options explicitly, use environment variables, or call `require('dotenv').config()` yourself before using the library.
+
 ```bash
 npm install routeros-cli
 ```

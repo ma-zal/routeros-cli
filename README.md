@@ -4,6 +4,11 @@ MikroTik RouterOS CLI and Node.js library via Telnet.
 
 Execute RouterOS commands from your terminal, scripts, or AI agents — cross-platform, no native dependencies.
 
+Works with both connection methods:
+
+- **Direct Telnet** — connect straight to the MikroTik device IP (port 23)
+- **Woobm USB serial console** — connect via a Woobm USB-to-serial adapter (typically at `192.168.4.1`)
+
 ## Requirements
 
 - **Node.js 16+**
@@ -39,7 +44,8 @@ npm install routeros-cli
 Connection defaults are read from environment variables. Create a `.env` file in your working directory:
 
 ```env
-MIKROTIK_HOST=192.168.4.1
+MIKROTIK_HOST=192.168.88.1   # direct Telnet (MikroTik default IP)
+# MIKROTIK_HOST=192.168.4.1  # Woobm USB serial console
 MIKROTIK_PORT=23
 MIKROTIK_LOGIN=admin
 MIKROTIK_PASSWORD=yourpassword
@@ -95,7 +101,7 @@ Type `quit` or press `Ctrl+C` to exit.
 
 | Option              | Default                        | Description                          |
 | ------------------- | ------------------------------ | ------------------------------------ |
-| `--host <ip>`       | `MIKROTIK_HOST` env            | Device IP address                    |
+| `--host <ip>`       | `MIKROTIK_HOST` env / `192.168.88.1` | Device IP (direct Telnet) or `192.168.4.1` (Woobm USB) |
 | `--port <port>`     | `MIKROTIK_PORT` env / `23`     | Telnet port                          |
 | `--login <user>`    | `MIKROTIK_LOGIN` env / `admin` | Username                             |
 | `--password <pass>` | `MIKROTIK_PASSWORD` env        | Password                             |
@@ -148,7 +154,7 @@ const result = await executeCommand('/system identity print', {
 import { RouterOSSession } from 'routeros-cli';
 
 const session = new RouterOSSession({
-  host: '192.168.4.1',
+  host: '192.168.88.1', // or 192.168.4.1 for Woobm USB
   commandTimeout: 15_000, // ms
 });
 
@@ -167,7 +173,7 @@ await session.close();
 
 ```typescript
 interface RouterOSOptions {
-  host?: string; // default: MIKROTIK_HOST env | 192.168.4.1
+  host?: string; // default: MIKROTIK_HOST env | 192.168.88.1 (direct) or 192.168.4.1 (Woobm USB)
   port?: number; // default: MIKROTIK_PORT env | 23
   login?: string; // default: MIKROTIK_LOGIN env | admin
   password?: string; // default: MIKROTIK_PASSWORD env
@@ -175,6 +181,15 @@ interface RouterOSOptions {
   commandTimeout?: number; // Command response timeout in ms (default: 10 000)
 }
 ```
+
+## Tested hardware
+
+| Device | Connection | RouterOS |
+| ------ | ---------- | -------- |
+| MikroTik hAP ac² (RBD52G-5HacD2HnD) | Direct Telnet (port 23) | 7.21.4 |
+| MikroTik hAP ac² (RBD52G-5HacD2HnD) | Woobm USB serial console | 7.21.4 |
+
+The library should work on any MikroTik device running RouterOS 7.x with Telnet enabled.
 
 ## Issue fix: Git Bash on Windows
 

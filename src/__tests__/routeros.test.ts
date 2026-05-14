@@ -153,7 +153,7 @@ describe('via Woobm USB serial console', () => {
         .mockResolvedValueOnce('Login: ')
         .mockResolvedValueOnce('')
         .mockResolvedValueOnce('Login failed\n')
-        // Second attempt (after 3 s retry delay): succeeds
+        // Second attempt (after 2 s retry delay): succeeds
         .mockResolvedValueOnce('Login: ')
         .mockResolvedValueOnce('')
         .mockResolvedValueOnce('Password: ')
@@ -162,6 +162,21 @@ describe('via Woobm USB serial console', () => {
       const p = login(conn, creds, 1);
       await vi.runAllTimersAsync();
       await p; // must not throw
+    });
+
+    it('retries immediately when Login: is embedded in the failure message (direct Telnet)', async () => {
+      // Direct MikroTik Telnet sends "Login failed...\r\nLogin: " in one chunk
+      // instead of a separate chunk. login() must not call waitForLoginPrompt
+      // again (which would timeout) but instead send the username right away.
+      readRaw
+        .mockResolvedValueOnce('Login: ')
+        .mockResolvedValueOnce('')
+        .mockResolvedValueOnce('Login failed, incorrect username or password\r\n\r\nLogin: ')
+        .mockResolvedValueOnce('')           // empty read after retry
+        .mockResolvedValueOnce('Password: ')
+        .mockResolvedValueOnce('[admin@MikroTik] > ');
+
+      await login(conn, creds, 1); // must not throw or need fake timers
     });
   });
 
@@ -203,6 +218,18 @@ describe('via Woobm USB serial console', () => {
 
       await readUntilPrompt(conn, 'secret');
       expect(sendline).toHaveBeenCalledWith('y');
+    });
+
+    it('does not break on command-echo line that contains an inline prompt', async () => {
+      // Direct MikroTik Telnet echoes each command as "[prompt] > cmd\r\n"
+      // before the actual output. The prompt pattern appears mid-buffer here,
+      // not at the end. readUntilPrompt must wait for the trailing prompt.
+      readRaw
+        .mockResolvedValueOnce('/ip address print\r[admin@MikroTik] > /ip address print\r\n')
+        .mockResolvedValueOnce('192.168.88.1/24\n[admin@MikroTik] > ');
+
+      const result = await readUntilPrompt(conn, 'secret');
+      expect(result).toContain('192.168.88.1/24');
     });
 
     it('resets the deadline after an auto-response', async () => {

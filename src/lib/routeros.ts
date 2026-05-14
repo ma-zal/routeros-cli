@@ -9,6 +9,17 @@ import { TelnetConn } from './telnet';
 export const MAIN_PROMPT_RE = /\]\s*>\s*/;
 
 /**
+ * Same pattern anchored to the end of the buffer.
+ *
+ * Direct MikroTik Telnet echoes each command as "[prompt] > command\r\n"
+ * before the actual output. That line contains the prompt in the middle, not
+ * at the end. Using MAIN_PROMPT_RE would break readUntilPrompt prematurely on
+ * this echo line. This end-anchored variant matches only the trailing prompt
+ * that signals the command has finished.
+ */
+const TRAILING_PROMPT_RE = /\]\s*>\s*$/;
+
+/**
  * Interactive prompts that may appear mid-session and require an automatic
  * response to keep the flow unblocked.
  *
@@ -38,7 +49,7 @@ export interface Credentials {
  * The 120 s default covers a cold router boot where the device may still be
  * initialising its network stack when we connect.
  */
-async function waitForLoginPrompt(conn: TelnetConn, timeoutMs = 120_000): Promise<void> {
+async function waitForLoginPrompt(conn: TelnetConn, timeoutMs = 20_000): Promise<void> {
   let buf = '';
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -76,7 +87,7 @@ export async function login(conn: TelnetConn, creds: Credentials, retries = 3): 
   let newPwSent = false;
   let repeatPwSent = false;
   let buf = '';
-  const deadline = Date.now() + 25_000;
+  const deadline = Date.now() + 15_000;
 
   while (Date.now() < deadline) {
     const chunk = await conn.readRaw(Math.min(3000, deadline - Date.now()));
@@ -88,9 +99,15 @@ export async function login(conn: TelnetConn, creds: Credentials, retries = 3): 
       buf = '';
     } else if (/failed/i.test(buf)) {
       if (retries > 0) {
+        // Direct MikroTik Telnet sends "Login failed...\r\nLogin: " in one chunk,
+        // so the next Login: prompt may already be in the buffer. Skip the wait
+        // and waitForLoginPrompt call in that case to avoid a 20 s timeout.
+        const promptAlreadyReceived = /Login:/i.test(buf);
         buf = '';
-        await new Promise((r) => setTimeout(r, 3000));
-        await waitForLoginPrompt(conn);
+        if (!promptAlreadyReceived) {
+          await new Promise((r) => setTimeout(r, 2000));
+          await waitForLoginPrompt(conn);
+        }
         conn.sendline(creds.login);
         retries--;
       } else {
@@ -138,8 +155,8 @@ export async function readUntilPrompt(conn: TelnetConn, password: string, timeou
     const chunk = await conn.readRaw(Math.min(2000, remaining));
 
     if (!chunk) {
-      // No data arrived — stop only if the prompt is already in the buffer.
-      if (MAIN_PROMPT_RE.test(buf)) break;
+      // No data arrived — stop only if the trailing prompt is in the buffer.
+      if (TRAILING_PROMPT_RE.test(buf)) break;
       continue;
     }
     buf += chunk;
@@ -149,7 +166,7 @@ export async function readUntilPrompt(conn: TelnetConn, password: string, timeou
       conn.sendline(hit.response(password));
       buf = '';
       deadline = Date.now() + timeoutMs;
-    } else if (MAIN_PROMPT_RE.test(buf)) {
+    } else if (TRAILING_PROMPT_RE.test(buf)) {
       break;
     }
   }

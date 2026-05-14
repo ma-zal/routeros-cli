@@ -17,16 +17,19 @@ Execute RouterOS commands from your terminal, scripts, or AI agents — cross-pl
 > in place of `routeros-cli`.
 
 **Global CLI (recommended for terminal use):**
+
 ```bash
 npm install -g routeros-cli
 ```
 
 **Run without installing (npx):**
+
 ```bash
 npx routeros-cli exec "/ip address print"
 ```
 
 **As a library in your project:**
+
 ```bash
 npm install routeros-cli
 ```
@@ -71,6 +74,7 @@ routeros-cli batch -f commands.txt --json
 ```
 
 Example `commands.txt`:
+
 ```
 # Print network interfaces
 /interface print
@@ -89,21 +93,21 @@ Type `quit` or press `Ctrl+C` to exit.
 
 ### Global options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--host <ip>` | `MIKROTIK_HOST` env | Device IP address |
-| `--port <port>` | `MIKROTIK_PORT` env / `23` | Telnet port |
-| `--login <user>` | `MIKROTIK_LOGIN` env / `admin` | Username |
-| `--password <pass>` | `MIKROTIK_PASSWORD` env | Password |
-| `--timeout <sec>` | `10` | Command response timeout in seconds |
-| `--json` | — | Output as JSON (`{"output": "..."}`) |
+| Option              | Default                        | Description                          |
+| ------------------- | ------------------------------ | ------------------------------------ |
+| `--host <ip>`       | `MIKROTIK_HOST` env            | Device IP address                    |
+| `--port <port>`     | `MIKROTIK_PORT` env / `23`     | Telnet port                          |
+| `--login <user>`    | `MIKROTIK_LOGIN` env / `admin` | Username                             |
+| `--password <pass>` | `MIKROTIK_PASSWORD` env        | Password                             |
+| `--timeout <sec>`   | `10`                           | Command response timeout in seconds  |
+| `--json`            | —                              | Output as JSON (`{"output": "..."}`) |
 
 ### Exit codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Success |
-| `1` | Connection or login error |
+| Code | Meaning                   |
+| ---- | ------------------------- |
+| `0`  | Success                   |
+| `1`  | Connection or login error |
 
 ## JSON output
 
@@ -115,8 +119,9 @@ routeros-cli exec "/ip address print" --json
 ```
 
 Errors are also JSON on stderr:
+
 ```json
-{"error": "RouterOS login failed — check MIKROTIK_LOGIN / MIKROTIK_PASSWORD"}
+{ "error": "RouterOS login failed — check MIKROTIK_LOGIN / MIKROTIK_PASSWORD" }
 ```
 
 ## Node.js Library
@@ -150,14 +155,10 @@ const session = new RouterOSSession({
 await session.connect();
 
 const addresses = await session.execute('/ip address print');
-const identity  = await session.execute('/system identity print');
+const identity = await session.execute('/system identity print');
 
 // Run multiple commands and get a result map
-const results = await session.executeBatch([
-  '/ip address print',
-  '/interface print',
-  '/system resource print',
-]);
+const results = await session.executeBatch(['/ip address print', '/interface print', '/system resource print']);
 
 await session.close();
 ```
@@ -166,27 +167,24 @@ await session.close();
 
 ```typescript
 interface RouterOSOptions {
-  host?:           string;  // default: MIKROTIK_HOST env | 192.168.4.1
-  port?:           number;  // default: MIKROTIK_PORT env | 23
-  login?:          string;  // default: MIKROTIK_LOGIN env | admin
-  password?:       string;  // default: MIKROTIK_PASSWORD env
-  connectTimeout?: number;  // TCP connect timeout in seconds (default: 15)
-  commandTimeout?: number;  // Command response timeout in ms (default: 10 000)
+  host?: string; // default: MIKROTIK_HOST env | 192.168.4.1
+  port?: number; // default: MIKROTIK_PORT env | 23
+  login?: string; // default: MIKROTIK_LOGIN env | admin
+  password?: string; // default: MIKROTIK_PASSWORD env
+  connectTimeout?: number; // TCP connect timeout in seconds (default: 15)
+  commandTimeout?: number; // Command response timeout in ms (default: 10 000)
 }
 ```
 
-## Git Bash on Windows
+## Issue fix: Git Bash on Windows
 
 Git Bash converts paths starting with `/` to Windows filesystem paths  
 (e.g. `/ip` → `C:/Program Files/Git/ip`).
 
 **Fix — add to your `~/.bashrc`:**
+
 ```bash
 export MSYS_NO_PATHCONV=1
 ```
 
 Then restart Git Bash. Alternatively, use **PowerShell** or **CMD** instead.
-
-## License
-
-MIT

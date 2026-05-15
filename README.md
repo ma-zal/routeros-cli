@@ -11,8 +11,8 @@ Works with both connection methods:
 
 ## Requirements
 
-- **Node.js 16+**
-- A MikroTik device with Telnet enabled (port 23 by default)
+- A MikroTik device with Telnet enabled (port 23 by default),
+- or a Woobm USB dongle connected to Mikrotik USB and to computer Wifi.
 
 ## Installation
 

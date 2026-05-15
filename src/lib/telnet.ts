@@ -88,6 +88,11 @@ export class TelnetConn {
     this.send(text + '\r');
   }
 
+  /** Send raw bytes without any line terminator. */
+  sendRaw(text: string): void {
+    this.send(text);
+  }
+
   /**
    * Strip Telnet IAC sequences from a raw buffer and reply to option
    * negotiations inline.

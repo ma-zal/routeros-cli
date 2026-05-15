@@ -82,7 +82,11 @@ async function waitForLoginPrompt(conn: TelnetConn, timeoutMs = 20_000): Promise
  */
 export async function login(conn: TelnetConn, creds: Credentials, retries = 3): Promise<void> {
   await waitForLoginPrompt(conn);
-  conn.sendline(creds.login);
+  // "+t4096w9999h": disable terminal auto-detection (t), set width to 4096 (4096w)
+  // and height to 9999 (9999h). Providing both dimensions prevents RouterOS from
+  // probing terminal size at all. Large height also disables --More-- paging.
+  // Docs: https://help.mikrotik.com/docs/spaces/ROS/pages/328134/Command+Line+Interface#CommandLineInterface-LoginOptions
+  conn.sendline(creds.login + '+t4096w9999h');
 
   let newPwSent = false;
   let repeatPwSent = false;
@@ -93,6 +97,13 @@ export async function login(conn: TelnetConn, creds: Credentials, retries = 3): 
     const chunk = await conn.readRaw(Math.min(3000, deadline - Date.now()));
     if (!chunk) continue;
     buf += chunk;
+
+    // Older RouterOS versions that ignore "+t" still probe terminal size with
+    // ANSI DSR (ESC[6n). We reply ESC[1;4096R so they also use a wide terminal.
+    if (buf.includes('\x1b[6n')) {
+      conn.sendRaw('\x1b[1;4096R');
+      buf = buf.replace('\x1b[6n', '');
+    }
 
     if (/Password:/i.test(buf) && !newPwSent && !repeatPwSent) {
       conn.sendline(creds.password);

@@ -12,6 +12,7 @@
  * them via Commander's built-in cmd.optsWithGlobals().
  */
 import * as fs from 'fs';
+import { version } from '../package.json';
 import * as readline from 'readline';
 import { Command, OptionValues } from 'commander';
 import { config } from 'dotenv';
@@ -233,7 +234,7 @@ const program = new Command();
 program
   .name('roscli')
   .description('MikroTik RouterOS CLI — execute commands via Telnet')
-  .version('0.1.0')
+  .version(version)
   .option('--host <ip>', 'Device IP address', DEFAULT_HOST)
   .option('--port <port>', 'Telnet port', DEFAULT_PORT)
   .option('--login <user>', 'Username', DEFAULT_LOGIN)

@@ -1,4 +1,4 @@
-# routeros-cli
+# Mikrotik RouterOS CLI (and Node.js library)
 
 MikroTik RouterOS CLI and Node.js library via Telnet.
 
@@ -55,16 +55,16 @@ Any option can also be passed directly on the command line and overrides the env
 ### Execute a single command
 
 ```bash
-routeros-cli exec "/ip address print"
-routeros-cli exec "/system identity print" --host 10.0.0.1
-routeros-cli exec "/interface print" --json
+roscli exec "/ip address print"
+roscli exec "/system identity print" --host 10.0.0.1
+roscli exec "/interface print" --json
 ```
 
 ### Pipe commands via stdin
 
 ```bash
-echo "/ip address print" | routeros-cli exec
-cat commands.txt | routeros-cli exec
+echo "/ip address print" | roscli exec
+cat commands.txt | roscli exec
 ```
 
 ### Run a batch file
@@ -72,8 +72,8 @@ cat commands.txt | routeros-cli exec
 One command per line. Lines starting with `#` are treated as comments.
 
 ```bash
-routeros-cli batch -f commands.txt
-routeros-cli batch -f commands.txt --json
+roscli batch -f commands.txt
+roscli batch -f commands.txt --json
 ```
 
 Example `commands.txt`:
@@ -88,8 +88,8 @@ Example `commands.txt`:
 ### Open an interactive console session
 
 ```bash
-routeros-cli console
-routeros-cli console --host 10.0.0.1
+roscli console
+roscli console --host 10.0.0.1
 ```
 
 Type `quit` or press `Ctrl+C` to exit.
@@ -117,7 +117,7 @@ Type `quit` or press `Ctrl+C` to exit.
 The `--json` flag makes output machine-readable. Useful for AI agents and scripts:
 
 ```bash
-routeros-cli exec "/ip address print" --json
+roscli exec "/ip address print" --json
 # {"output":"Columns: ADDRESS, NETWORK, INTERFACE, VRF\n..."}
 ```
 

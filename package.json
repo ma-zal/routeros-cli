@@ -1,6 +1,6 @@
 {
   "name": "routeros-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MikroTik RouterOS CLI and Node.js library via Telnet",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
